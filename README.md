@@ -37,6 +37,68 @@ dotnet publish Traductor/Traductor.csproj -c Release -r win-x64
 mismo sin recompilar — puerto del canal con el Guest, mapa de teclas y velocidad del cursor
 (#414 CA10).
 
+## Primera prueba en tu Windows (paso a paso)
+
+El traductor **no muestra ventana ni consola** (así lo pide #414 CA1), así que para tu primera
+corrida vas a depender del archivo `traductor.log` que escribe junto al `.exe` — sin eso estarías
+probando a ciegas.
+
+1. **Instalar el SDK de .NET 8** en la máquina Windows (el instalador oficial de Microsoft, "download
+   .NET 8 SDK").
+2. **Compilar y publicar:**
+   ```powershell
+   cd gabinete\traductor
+   dotnet publish Traductor\Traductor.csproj -c Release
+   ```
+   El `.exe` autocontenido queda en
+   `Traductor\Traductor\bin\Release\net8.0-windows\win-x64\publish\Traductor.exe`, junto con
+   `config.json`.
+3. **Correrlo suelto, sin kiosko ni Guest todavía** — doble clic en `Traductor.exe` (o desde una
+   terminal). No vas a ver nada en pantalla: es la conducta esperada. Confirma que arrancó bien
+   revisando **`traductor.log`** en esa misma carpeta — debe decir algo como:
+   ```
+   Traductor arrancando. Puerto WS: 8765. DpiScale: 1.
+   Hook de teclado instalado correctamente.
+   Servidor WebSocket escuchando en ws://127.0.0.1:8765/
+   ```
+   Si en vez de "instalado correctamente" ves un `ERROR instalando el hook de teclado`, es
+   exactamente el riesgo **R-Gab4** del plan (antivirus/permisos bloqueando el hook global) —
+   revisa Windows Defender / el antivirus de esa máquina antes de seguir.
+4. **Confirmar que sigue corriendo:** Administrador de tareas → pestaña Detalles → buscar
+   `Traductor.exe`. Para confirmar que escucha el puerto: `netstat -ano | findstr 8765` en una
+   terminal (debe aparecer `LISTENING`).
+5. **R-Gab1 — probar la conexión desde el Guest**, en un Chrome normal (sin kiosko todavía, para
+   poder usar la consola de DevTools): abrir el Guest de staging, abrir la consola y ejecutar
+   ```js
+   const ws = new WebSocket('ws://127.0.0.1:8765');
+   ws.onopen = () => console.log('conectó');
+   ws.onerror = (e) => console.log('bloqueado / error', e);
+   ```
+   Si conecta, revisa `traductor.log`: debe aparecer `Guest conectado por WebSocket.`. Si Chrome lo
+   bloquea (Private Network Access u otra política), aquí es donde se ve.
+6. **Probar el circuito completo**, ya con `CabinetService` del Guest: abrir el Guest de staging con
+   `?cabinet=1` en la URL (p. ej. `https://<tu-staging>/?cabinet=1`), iniciar sesión y abrir
+   cualquier juego. Al montarse la pantalla de juego, `traductor.log` debe registrar
+   `modo_juego: ON (rect=...)`. Con eso activo, las flechas del teclado normal (simulando la
+   botonera) deberían mover el **cursor real** de Windows en vez del puntero propio del Guest.
+
+**A propósito, no vayas directo al modo kiosko de `kiosko/GUIA-INSTALACION.md` para esta primera
+prueba** — el kiosko bloquea DevTools, la barra de direcciones y la salida de pantalla completa, que
+son justo las herramientas que necesitas para ver qué está pasando. Esa guía es el **último** paso,
+una vez que los puntos 1–6 ya funcionan en una ventana normal de Chrome.
+
+## Empaquetar y distribuir a un casino (una vez validado)
+
+El traductor se distribuye como un `.zip` con el contenido de la carpeta `publish/` (el `.exe`
+autocontenido — no necesita instalar el runtime de .NET en la máquina destino — más `config.json` y,
+cuando exista, `cursor-gabinete.cur`). Ese `.zip` es **idéntico para cualquier cliente**: no sabe nada
+de proveedores, juegos ni URLs.
+
+Lo único que cambia por cliente/casino es el acceso directo de Chrome en modo kiosko
+(`kiosko/GUIA-INSTALACION.md` §1): la URL del Guest de ese casino, con `?cabinet=1` al final. El
+traductor no redirige a nada ni conoce esa URL — solo escucha en `127.0.0.1` a la espera de que el
+Guest (la página que Chrome sí abre con esa URL) se conecte.
+
 ## Orden de validación (sin gabinete físico todavía)
 
 Ver el plan completo para el detalle de cada riesgo. En resumen, **en este orden**:

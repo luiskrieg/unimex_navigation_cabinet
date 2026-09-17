@@ -18,20 +18,49 @@ internal static class Program
         var state = new ModoJuegoState(config.WatchdogTimeoutMs);
         var controller = new GameModeController(config.KeyMap, mouse, cursor, state, config.DpiScale);
 
+        Log.Write($"Traductor arrancando. Puerto WS: {config.WebSocketPort}. DpiScale: {config.DpiScale}.");
+
         var hook = new KeyboardHook { ShouldSwallow = controller.ShouldSwallow };
         hook.KeyDown += controller.OnKeyDown;
         hook.KeyUp += controller.OnKeyUp;
-        hook.Install();
+        try
+        {
+            hook.Install();
+            Log.Write("Hook de teclado instalado correctamente.");
+        }
+        catch (Exception ex)
+        {
+            // No se aborta el proceso: al menos el canal WS queda arriba
+            // para poder confirmar R-Gab1 aunque R-Gab2 (el hook) haya
+            // fallado por antivirus/permisos (R-Gab4).
+            Log.Write($"ERROR instalando el hook de teclado: {ex.Message}");
+        }
 
         var bridge = new WebSocketBridge(config.WebSocketPort, state);
-        bridge.ModoJuegoOnRequested += controller.EnterGameMode;
+        bridge.ModoJuegoOnRequested += rect =>
+        {
+            Log.Write($"modo_juego: ON (rect={(rect is null ? "null" : $"{rect.X},{rect.Y},{rect.Width}x{rect.Height}")})");
+            controller.EnterGameMode(rect);
+        };
 
         // Única fuente de verdad para "salir de modo juego" (ver
         // GameModeController.ExitGameMode): cubre tanto el aviso explícito
         // del Guest como el vencimiento del vigilante de latido.
-        state.TurnedOff += controller.ExitGameMode;
+        state.TurnedOff += () =>
+        {
+            Log.Write("modo_juego: OFF");
+            controller.ExitGameMode();
+        };
 
-        bridge.Start();
+        try
+        {
+            bridge.Start();
+            Log.Write($"Servidor WebSocket escuchando en ws://127.0.0.1:{config.WebSocketPort}/");
+        }
+        catch (Exception ex)
+        {
+            Log.Write($"ERROR arrancando el servidor WebSocket: {ex.Message}");
+        }
 
         AppDomain.CurrentDomain.ProcessExit += (_, _) =>
         {

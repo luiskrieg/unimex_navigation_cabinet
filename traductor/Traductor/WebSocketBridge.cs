@@ -99,6 +99,7 @@ public sealed class WebSocketBridge
 
         var socket = wsContext.WebSocket;
         var buffer = new byte[4096];
+        Log.Write("Guest conectado por WebSocket.");
 
         try
         {
@@ -117,6 +118,10 @@ public sealed class WebSocketBridge
         }
         catch (OperationCanceledException) { }
         catch (WebSocketException) { }
+        finally
+        {
+            Log.Write("Guest desconectado del WebSocket.");
+        }
     }
 
     private void HandleMessage(string json)
@@ -129,8 +134,9 @@ public sealed class WebSocketBridge
                 PropertyNameCaseInsensitive = true,
             });
         }
-        catch (JsonException)
+        catch (JsonException ex)
         {
+            Log.Write($"Mensaje no válido del Guest, ignorado: {ex.Message}");
             return;
         }
 
