@@ -1,0 +1,116 @@
+using System.Text.Json;
+
+namespace Traductor;
+
+// Nota: usamos el enum `Keys` propio de este proyecto (ver NativeMethods.cs),
+// no System.Windows.Forms.Keys — evita cargar la referencia completa de
+// WinForms en un programa que no tiene ninguna ventana.
+
+/// <summary>
+/// #414 CA10 — todo lo que el equipo puede necesitar ajustar sin recompilar:
+/// puerto del canal con el Guest, mapa de teclas de la botonera y velocidad
+/// del cursor. Se lee una sola vez al arrancar.
+/// </summary>
+public sealed class AppConfig
+{
+    public int WebSocketPort { get; init; } = 8765;
+    public KeyMapConfig KeyMap { get; init; } = new();
+    public CursorConfig Cursor { get; init; } = new();
+    public int WatchdogTimeoutMs { get; init; } = 2000;
+    public int PingIntervalMs { get; init; } = 500;
+
+    /// Factor para convertir el rect que reporta el Guest (px CSS de
+    /// viewport) a píxeles físicos de pantalla para `SetCursorPos` al entrar
+    /// en modo juego. 1.0 asume kiosko a pantalla completa sin escalado de
+    /// Windows ni zoom de Chrome — es el riesgo R-Gab3 del plan, se ajusta
+    /// aquí sin recompilar si el gabinete real tiene otro DPI.
+    public double DpiScale { get; init; } = 1.0;
+
+    public static AppConfig Load(string path)
+    {
+        if (!File.Exists(path))
+        {
+            return new AppConfig();
+        }
+
+        var json = File.ReadAllText(path);
+        var raw = JsonSerializer.Deserialize<RawConfig>(json, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+        }) ?? new RawConfig();
+
+        return new AppConfig
+        {
+            WebSocketPort = raw.WebSocketPort,
+            WatchdogTimeoutMs = raw.WatchdogTimeoutMs,
+            PingIntervalMs = raw.PingIntervalMs,
+            DpiScale = raw.DpiScale,
+            Cursor = raw.Cursor,
+            KeyMap = KeyMapConfig.FromRaw(raw.KeyMap),
+        };
+    }
+
+    // Forma cruda del JSON (keyMap llega como listas de nombres de tecla).
+    private sealed class RawConfig
+    {
+        public int WebSocketPort { get; set; } = 8765;
+        public int WatchdogTimeoutMs { get; set; } = 2000;
+        public int PingIntervalMs { get; set; } = 500;
+        public double DpiScale { get; set; } = 1.0;
+        public CursorConfig Cursor { get; set; } = new();
+        public RawKeyMap KeyMap { get; set; } = new();
+    }
+
+    private sealed class RawKeyMap
+    {
+        public string[] Up { get; set; } = { "Up" };
+        public string[] Down { get; set; } = { "Down" };
+        public string[] Left { get; set; } = { "Left" };
+        public string[] Right { get; set; } = { "Right" };
+        public string[] Confirm { get; set; } = { "Return", "Space" };
+        public string[] Escape { get; set; } = { "Escape" };
+        public string[] Back { get; set; } = { "Back" };
+    }
+
+    public sealed class KeyMapConfig
+    {
+        public HashSet<Keys> Up { get; init; } = new();
+        public HashSet<Keys> Down { get; init; } = new();
+        public HashSet<Keys> Left { get; init; } = new();
+        public HashSet<Keys> Right { get; init; } = new();
+        public HashSet<Keys> Confirm { get; init; } = new();
+        public HashSet<Keys> Escape { get; init; } = new();
+        public HashSet<Keys> Back { get; init; } = new();
+
+        internal static KeyMapConfig FromRaw(RawKeyMap raw) => new()
+        {
+            Up = Parse(raw.Up),
+            Down = Parse(raw.Down),
+            Left = Parse(raw.Left),
+            Right = Parse(raw.Right),
+            Confirm = Parse(raw.Confirm),
+            Escape = Parse(raw.Escape),
+            Back = Parse(raw.Back),
+        };
+
+        private static HashSet<Keys> Parse(IEnumerable<string> names)
+        {
+            var set = new HashSet<Keys>();
+            foreach (var name in names)
+            {
+                if (Enum.TryParse<Keys>(name, ignoreCase: true, out var key))
+                {
+                    set.Add(key);
+                }
+            }
+            return set;
+        }
+    }
+}
+
+public sealed class CursorConfig
+{
+    public int StepBase { get; init; } = 16;
+    public int StepGrowth { get; init; } = 7;
+    public int AccelMax { get; init; } = 9;
+}

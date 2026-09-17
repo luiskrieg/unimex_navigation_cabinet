@@ -1,0 +1,21 @@
+{
+  "_comentario": "Nombres de VirtualKey de .NET (System.Windows.Forms.Keys / enum Keys de este proyecto). Cada acción admite varios alias por si el encoder de la botonera emite un código distinto al esperado.",
+  "webSocketPort": 8765,
+  "keyMap": {
+    "up": ["Up"],
+    "down": ["Down"],
+    "left": ["Left"],
+    "right": ["Right"],
+    "confirm": ["Return", "Space"],
+    "escape": ["Escape"],
+    "back": ["Back", "BrowserBack"]
+  },
+  "cursor": {
+    "stepBase": 16,
+    "stepGrowth": 7,
+    "accelMax": 9
+  },
+  "watchdogTimeoutMs": 2000,
+  "pingIntervalMs": 500,
+  "dpiScale": 1.0
+}

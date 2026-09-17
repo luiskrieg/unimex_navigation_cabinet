@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Sin ventana ni consola visible: #414 CA1 -->
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- No mostramos ninguna ventana, pero SetWindowsHookEx entrega sus
+         callbacks al hilo que instaló el hook a través de su cola de
+         mensajes de Windows: sin un mensaje pump, el hook nunca dispara.
+         Application.Run() es la forma estándar de bombear mensajes sin
+         crear ningún Form. -->
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>Traductor</RootNamespace>
+    <AssemblyName>Traductor</AssemblyName>
+
+    <!-- Publicación como un solo .exe autocontenido (sin instalar el runtime de
+         .NET en cada gabinete): dotnet publish -c Release -r win-x64 -->
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Update="config.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>
