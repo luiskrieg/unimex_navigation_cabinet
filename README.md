@@ -76,11 +76,13 @@ probando a ciegas.
    ```
    Si conecta, revisa `traductor.log`: debe aparecer `Guest conectado por WebSocket.`. Si Chrome lo
    bloquea (Private Network Access u otra política), aquí es donde se ve.
-6. **Probar el circuito completo**, ya con `CabinetService` del Guest: abrir el Guest de staging con
-   `?cabinet=1` en la URL (p. ej. `https://<tu-staging>/?cabinet=1`), iniciar sesión y abrir
-   cualquier juego. Al montarse la pantalla de juego, `traductor.log` debe registrar
-   `modo_juego: ON (rect=...)`. Con eso activo, las flechas del teclado normal (simulando la
-   botonera) deberían mover el **cursor real** de Windows en vez del puntero propio del Guest.
+6. **Probar el circuito completo**, ya con `CabinetService` del Guest: con el traductor corriendo,
+   abrir el Guest de staging normal (sin ningún parámetro en la URL), iniciar sesión y abrir cualquier
+   juego. Al montarse la pantalla de juego, `traductor.log` debe registrar `modo_juego: ON
+   (rect=...)`. Con eso activo, las flechas del teclado normal (simulando la botonera) deberían mover
+   el **cursor real** de Windows en vez del puntero propio del Guest. No hace falta ningún parámetro ni
+   configuración: el Guest se conecta solo apenas detecta el traductor en `127.0.0.1` (ver
+   `cabinet.service.ts`).
 
 **A propósito, no vayas directo al modo kiosko de `kiosko/GUIA-INSTALACION.md` para esta primera
 prueba** — el kiosko bloquea DevTools, la barra de direcciones y la salida de pantalla completa, que
@@ -95,9 +97,14 @@ cuando exista, `cursor-gabinete.cur`). Ese `.zip` es **idéntico para cualquier 
 de proveedores, juegos ni URLs.
 
 Lo único que cambia por cliente/casino es el acceso directo de Chrome en modo kiosko
-(`kiosko/GUIA-INSTALACION.md` §1): la URL del Guest de ese casino, con `?cabinet=1` al final. El
+(`kiosko/GUIA-INSTALACION.md` §1): la URL del Guest de ese casino, sin ningún parámetro especial. El
 traductor no redirige a nada ni conoce esa URL — solo escucha en `127.0.0.1` a la espera de que el
-Guest (la página que Chrome sí abre con esa URL) se conecte.
+Guest (cualquier página del Guest que Chrome abra en esa misma máquina) se conecte solo.
+
+**Nota importante:** esto significa que en un mismo casino conviven sin ningún flag ni configuración
+los jugadores web normales (celular, laptop, sin traductor) y los gabinetes físicos (con traductor) —
+cada sesión de navegador decide por sí sola, según si logra conectarse a su propio `127.0.0.1`, no
+según ninguna configuración del casino en la base de datos.
 
 ## Orden de validación (sin gabinete físico todavía)
 

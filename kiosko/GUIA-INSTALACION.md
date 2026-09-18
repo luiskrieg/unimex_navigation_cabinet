@@ -16,19 +16,21 @@
 ## 1. Dirección del Guest que abre el kiosko
 
 **Se cambia aquí:** el acceso directo / comando que lanza Chrome en modo kiosko lleva la URL de
-producción del Guest de Instalotto **más el parámetro que activa el modo gabinete** que espera
-`cabinet.service.ts` (issue #413) del lado del Guest:
+producción del Guest de Instalotto, **sin ningún parámetro especial**:
 
 ```
-chrome.exe --kiosk "https://<dominio-del-guest>/?cabinet=1" --edge-skip-first-run --noerrdialogs
+chrome.exe --kiosk "https://<dominio-del-guest>" --edge-skip-first-run --noerrdialogs
 ```
 
 Para un gabinete de otro cliente, este es el **único** lugar que cambia: la URL. Todo lo demás de esta
 guía es igual (#412 CA6.1).
 
-> El parámetro `?cabinet=1` es una decisión de este mismo proyecto (no depende de Kenosoft): el Guest
-> lo lee una sola vez al arrancar y lo recuerda en `localStorage`, así que sigue vigente aunque la
-> navegación interna de Angular borre la query string.
+> El Guest **no necesita saber por adelantado** que está en un gabinete: al arrancar intenta conectarse
+> a `127.0.0.1` (donde escucha el traductor, ver §4). Si el traductor ya está corriendo —que es
+> justamente lo que deja listo la Tarea Programada del punto 4—, la conexión se establece sola y el
+> Guest activa el modo gabinete sin URL, sin `localStorage` y sin que nadie tenga que configurar nada
+> por casino. Si no hay traductor corriendo (o el kiosko aún no arrancó esa tarea), el intento de
+> conexión simplemente falla y el Guest se comporta como en cualquier navegador normal.
 
 ## 2. Chrome en modo kiosko, sin salida posible
 
