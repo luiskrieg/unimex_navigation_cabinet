@@ -1,6 +1,14 @@
 {
-  "_comentario": "Nombres de VirtualKey de .NET (System.Windows.Forms.Keys / enum Keys de este proyecto). Cada acción admite varios alias por si el encoder de la botonera emite un código distinto al esperado.",
+  "_comentario": "Ajustes del traductor. Se lee al arrancar, junto al .exe. Si este archivo no existe, el traductor usa exactamente estos mismos valores salvo guestUrl, que queda vacío.",
+
+  "_guestUrl": "Dirección que el traductor abre al arrancar. Vacío = no abre nada y solo escucha (así es el gabinete definitivo, donde Chrome lo lanza su propia Tarea Programada).",
+  "guestUrl": "",
+  "_kiosko": "Solo aplica si hay guestUrl. true = Chrome a pantalla completa sin salida (gabinete). false = ventana normal, útil para probar.",
+  "kiosk": true,
+
   "webSocketPort": 8765,
+
+  "_keyMap": "Nombres de VirtualKey de .NET (System.Windows.Forms.Keys / enum Keys de este proyecto). Cada acción admite varios alias por si el encoder de la botonera emite un código distinto al esperado.",
   "keyMap": {
     "up": ["Up"],
     "down": ["Down"],
@@ -10,12 +18,18 @@
     "escape": ["Escape"],
     "back": ["Back", "BrowserBack"]
   },
+
   "cursor": {
     "stepBase": 16,
     "stepGrowth": 7,
     "accelMax": 9
   },
+
   "watchdogTimeoutMs": 2000,
   "pingIntervalMs": 500,
-  "dpiScale": 1.0
+  "dpiScale": 1.0,
+
+  "_log": "logEnabled false apaga el archivo traductor.log por completo. logMaxBytes es el tope por archivo: al llegar se recicla a traductor.log.old, así que el traductor nunca ocupa más del doble de este número.",
+  "logEnabled": true,
+  "logMaxBytes": 1048576
 }

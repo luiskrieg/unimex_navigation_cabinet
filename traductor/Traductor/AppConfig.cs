@@ -10,6 +10,11 @@ namespace Traductor;
 /// #414 CA10 — todo lo que el equipo puede necesitar ajustar sin recompilar:
 /// puerto del canal con el Guest, mapa de teclas de la botonera y velocidad
 /// del cursor. Se lee una sola vez al arrancar.
+///
+/// Los valores por defecto de esta clase son exactamente los mismos que trae
+/// el `config.json` que se distribuye: el `.exe` suelto, sin ningún archivo
+/// al lado, se comporta igual que el paquete completo salvo por `GuestUrl`,
+/// que es lo único que no se puede adivinar.
 /// </summary>
 public sealed class AppConfig
 {
@@ -25,6 +30,22 @@ public sealed class AppConfig
     /// Windows ni zoom de Chrome — es el riesgo R-Gab3 del plan, se ajusta
     /// aquí sin recompilar si el gabinete real tiene otro DPI.
     public double DpiScale { get; init; } = 1.0;
+
+    /// Dirección del Guest que se abre al arrancar. Vacía = el traductor no
+    /// abre nada y solo escucha, que es el reparto del gabinete definitivo
+    /// (ahí Chrome lo lanza su propia Tarea Programada, ver
+    /// `kiosko/GUIA-INSTALACION.md`).
+    public string GuestUrl { get; init; } = "";
+
+    /// Solo aplica si hay `GuestUrl`: pantalla completa sin salida (gabinete)
+    /// o ventana normal (para probar en una máquina cualquiera).
+    public bool Kiosk { get; init; } = true;
+
+    /// El log es la única ventana a un traductor que no tiene ventana; el
+    /// tope de tamaño es lo que evita que eso crezca sin control en una
+    /// máquina que nadie supervisa. Ver <see cref="Log"/>.
+    public bool LogEnabled { get; init; } = true;
+    public long LogMaxBytes { get; init; } = 1024 * 1024;
 
     public static AppConfig Load(string path)
     {
@@ -45,6 +66,10 @@ public sealed class AppConfig
             WatchdogTimeoutMs = raw.WatchdogTimeoutMs,
             PingIntervalMs = raw.PingIntervalMs,
             DpiScale = raw.DpiScale,
+            GuestUrl = raw.GuestUrl,
+            Kiosk = raw.Kiosk,
+            LogEnabled = raw.LogEnabled,
+            LogMaxBytes = raw.LogMaxBytes,
             Cursor = raw.Cursor,
             KeyMap = KeyMapConfig.FromRaw(raw.KeyMap),
         };
@@ -57,6 +82,10 @@ public sealed class AppConfig
         public int WatchdogTimeoutMs { get; set; } = 2000;
         public int PingIntervalMs { get; set; } = 500;
         public double DpiScale { get; set; } = 1.0;
+        public string GuestUrl { get; set; } = "";
+        public bool Kiosk { get; set; } = true;
+        public bool LogEnabled { get; set; } = true;
+        public long LogMaxBytes { get; set; } = 1024 * 1024;
         public CursorConfig Cursor { get; set; } = new();
         public RawKeyMap KeyMap { get; set; } = new();
     }
@@ -69,7 +98,7 @@ public sealed class AppConfig
         public string[] Right { get; set; } = { "Right" };
         public string[] Confirm { get; set; } = { "Return", "Space" };
         public string[] Escape { get; set; } = { "Escape" };
-        public string[] Back { get; set; } = { "Back" };
+        public string[] Back { get; set; } = { "Back", "BrowserBack" };
     }
 
     public sealed class KeyMapConfig

@@ -17,3 +17,9 @@ obj/
 .idea/
 *.user
 *.suo
+
+# El paquete que genera traductor/empaquetar.ps1 (~62 MB): se regenera, no se versiona.
+Traductor.zip
+
+
+./claude
