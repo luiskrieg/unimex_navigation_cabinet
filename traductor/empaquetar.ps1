@@ -66,25 +66,24 @@ TRADUCTOR DEL GABINETE
 ======================
 
 COMO USARLO
-  1. Extrae esta carpeta completa en algun lugar con permiso de escritura,
-     por ejemplo C:\Traductor  (NO la dejes dentro del .zip ni en Archivos de programa).
-  2. Doble clic en Traductor.exe
+  1. Extrae el .zip COMPLETO en una carpeta con permiso de escritura,
+     por ejemplo C:\Traductor
+     (NO lo abras desde dentro del .zip, y NO lo pongas en Archivos de programa).
+  2. Dentro veras muchos archivos: es normal, el programa los necesita todos
+     juntos. Busca Traductor.exe y dale doble clic.
   3. Se abre solo: $modo
      apuntando a:  $GuestUrl
 
   El traductor NO muestra ventana propia: es normal no ver nada aparte del navegador.
+  No hace falta instalar nada mas (ni .NET ni ningun otro requisito).
 
 COMO CERRARLO
   Cierra el navegador (Alt+F4 si esta en pantalla completa).
   El traductor se apaga solo junto con el.
 
-SI WINDOWS LO BLOQUEA
+SI WINDOWS AVISA
   "Windows protegio tu PC"  ->  Mas informacion  ->  Ejecutar de todas formas.
-  El programa no esta firmado todavia; es esperado.
-
-  Si en cambio dice "Una directiva de Control de aplicaciones bloqueo este archivo",
-  esa maquina tiene Smart App Control activado y no hay forma de saltarlo con un
-  clic. Avisale a quien te paso este paquete.
+  El programa no esta firmado todavia; ese aviso es esperado y se puede pasar.
 
 SI ALGO NO FUNCIONA
   Junto a Traductor.exe aparece traductor.log. Abrelo y mandalo: ahi esta que paso.

@@ -22,14 +22,17 @@ Desde esta carpeta, en PowerShell:
 .\empaquetar.ps1 -GuestUrl "https://<dominio-del-guest>" -SinKiosko
 ```
 
-Deja `Traductor.zip` en el Escritorio (~62 MB). Contiene exactamente tres
-archivos:
+Deja `Traductor.zip` en el Escritorio (~67 MB). Dentro hay unos 244 archivos —el
+programa trae su propio runtime de .NET— de los cuales importan tres:
 
 | Archivo | Para qué |
 |---|---|
 | `Traductor.exe` | El programa. Autocontenido: **en destino no hay que instalar .NET**. |
 | `config.json` | Ajustes en texto plano. Se edita sin recompilar. |
 | `LEEME.txt` | Instrucciones para quien lo recibe. |
+
+Los otros ~241 son las DLL del runtime y tienen que viajar junto al `.exe`: se
+extrae y se reparte **la carpeta completa**, no el `.exe` suelto.
 
 La URL **no se compila dentro del `.exe`**: se inyecta en `config.json` al
 empaquetar. Para otro casino se vuelve a correr el script con otra `-GuestUrl`,
@@ -56,45 +59,62 @@ Administrador de tareas → Detalles → `Traductor.exe`.
 ## 3. Cuando Windows lo bloquea
 
 El `.exe` **no está firmado** (decisión pendiente, ver `../README.md` §"Qué falta
-decidir"). Hay dos bloqueos distintos y solo uno tiene salida:
+decidir"), así que Windows va a decir algo. Hay dos avisos distintos:
 
-| Mensaje | Qué es | Solución |
+| Mensaje | Qué es | Qué hacer |
 |---|---|---|
-| "Windows protegió tu PC" | SmartScreen: no reconoce el programa | **Más información** → **Ejecutar de todas formas**. Funciona. |
-| "Una directiva de Control de aplicaciones bloqueó este archivo" | **Smart App Control**, activo y forzado | No hay clic que lo salte. Ver abajo. |
+| "Windows protegió tu PC" | SmartScreen: no reconoce el programa | **Más información** → **Ejecutar de todas formas**. Se pasa con un clic. |
+| "Una directiva de Control de aplicaciones bloqueó este archivo" | **Smart App Control**: bloqueo duro, sin clic que lo salte | No debería pasar ya. Ver abajo. |
 
-**Smart App Control** viene encendido de fábrica en muchas instalaciones limpias
-de Windows 11 y bloquea cualquier `.exe` sin firma ni reputación — no es un aviso,
-es un bloqueo duro. Se confirma con:
+### Por qué este paquete no lo publicamos como un solo `.exe`
+
+Medido en una máquina con Smart App Control activo y forzado:
+
+| Cómo se publica | Tamaño | Resultado |
+|---|---|---|
+| Autocontenido **en un solo archivo** (`PublishSingleFile`) | 154 MB, 1 archivo | **Bloqueado**, 3 de 3 intentos |
+| Autocontenido **en carpeta** (lo que usamos) | 144 MB, 244 archivos | Corre, 3 de 3 |
+| Dependiente del runtime | 0.2 MB + .NET instalado aparte | Corre, 3 de 3 |
+
+Los tres son el mismo código y **ninguno** está firmado, así que lo que Smart App
+Control rechaza no es la falta de firma: es el patrón. Un binario grande y sin
+firma que se autodescomprime en memoria al arrancar es exactamente lo que hace un
+packer de malware, y el `.exe` de un solo archivo se ve así desde afuera.
+
+Por eso `Traductor.csproj` **no** usa `PublishSingleFile`. Si alguien lo vuelve a
+activar para tener "un solo archivo bonito", el paquete deja de correr en parte
+del parque de máquinas Windows 11 — y el síntoma no dice nada de single-file.
+
+### Dónde aplica Smart App Control
+
+- **Windows 10: no existe.** Ahí solo aparece el aviso de SmartScreen, que se pasa
+  con un clic.
+- **Windows 11 22H2 en adelante:** solo viene encendido en **instalaciones
+  limpias**. Una máquina que se actualizó desde Windows 10, o desde un Windows 11
+  anterior, lo tiene apagado de forma permanente.
+
+Para saber cómo está una máquina:
 
 ```powershell
 (Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Control\CI\Policy").VerifiedAndReputablePolicyState
 # 0 = apagado    1 = activo y forzado    2 = evaluación
 ```
 
-Si da `1`, en esa máquina el traductor no va a correr hasta que se firme el
-ejecutable. Se puede apagar desde Seguridad de Windows → Control de aplicaciones
-y navegador → Smart App Control, **pero apagarlo es irreversible**: volver a
-encenderlo exige reinstalar Windows. No lo recomendamos como parte del
-procedimiento; es información para quien decida asumirlo en su propia máquina.
+Si alguna vez vuelve a aparecer el bloqueo duro pese a todo lo anterior, la única
+salida buena es **firmar el ejecutable**. Apagar Smart App Control también
+funciona, pero es irreversible —volver a encenderlo exige reinstalar Windows—, así
+que no forma parte del procedimiento: es algo que cada quien decide para su propia
+máquina.
 
-> Esto convierte la firma del `.exe` en algo más urgente que "un pendiente con
-> Kenosoft": sin firma, el paquete simplemente no corre en una parte del parque de
-> máquinas Windows 11.
-
-### Probar en tu propia máquina con Smart App Control encendido
-
-Para desarrollo hay un rodeo que no toca la seguridad: correr el programa a
-través de `dotnet.exe`, que **sí** está firmado por Microsoft.
+### Probar sin publicar, durante el desarrollo
 
 ```powershell
-dotnet build Traductor\Traductor.csproj -c Release -p:SelfContained=false -p:PublishSingleFile=false -o C:\temp\traductor
+dotnet build Traductor\Traductor.csproj -c Release --self-contained false -p:PublishSingleFile=false -o C:\temp\traductor
 dotnet C:\temp\traductor\Traductor.dll
 ```
 
-Se comporta igual que el `.exe` empaquetado. Lo que Smart App Control bloquea es
-el ejecutable propio sin firmar, no el código administrado que carga un host
-firmado.
+Corre a través de `dotnet.exe`, que sí está firmado por Microsoft. Útil para
+iterar rápido sin esperar el publish completo de 144 MB.
 
 ## 4. Ajustes (`config.json`)
 

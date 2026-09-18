@@ -15,12 +15,18 @@
     <RootNamespace>Traductor</RootNamespace>
     <AssemblyName>Traductor</AssemblyName>
 
-    <!-- Publicación como un solo .exe autocontenido (sin instalar el runtime de
-         .NET en cada gabinete): dotnet publish -c Release -r win-x64 -->
+    <!-- Autocontenido (sin instalar el runtime de .NET en cada gabinete):
+         dotnet publish -c Release -r win-x64 -->
     <SelfContained>true</SelfContained>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-    <PublishSingleFile>true</PublishSingleFile>
-    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+
+    <!-- A propósito NO se usa PublishSingleFile. Medido en una máquina con
+         Smart App Control activo: el .exe de un solo archivo (154 MB) queda
+         bloqueado siempre, y el mismo código publicado como carpeta corre sin
+         problema. Un binario grande y sin firma que se autodescomprime al
+         arrancar es exactamente el patrón de un packer de malware, y eso es lo
+         que SAC rechaza — no la falta de firma en sí. El precio es repartir
+         una carpeta en vez de un archivo suelto. Ver traductor/GUIA-DE-USO.md §3. -->
   </PropertyGroup>
 
   <ItemGroup>
