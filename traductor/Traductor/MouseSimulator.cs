@@ -26,9 +26,14 @@ public sealed class MouseSimulator
 
     /// #414 CA4 y CA4.1 — paso corto al pulsar, crece progresivamente al
     /// mantener hasta un máximo, y arranca corto otra vez al soltar y volver
-    /// a pulsar. Mismos números que el puntero virtual del Guest
-    /// (game-pointer.service.ts) para que la sensación sea idéntica dentro y
-    /// fuera del gabinete.
+    /// a pulsar.
+    ///
+    /// Los números salieron de `game-pointer.service.ts` (el puntero virtual
+    /// del Guest) para que la sensación fuera idéntica dentro y fuera del
+    /// gabinete, pero ya <b>no</b> coinciden: sobre la pantalla real el mismo
+    /// paso se sentía demasiado rápido y se bajó por config. Si algún día se
+    /// quiere volver a emparejar las dos sensaciones, hay que mover también
+    /// los del Guest.
     public void Move(Direction dir, bool isRepeat)
     {
         _accel = isRepeat ? Math.Min(_accel + 1, _cfg.AccelMax) : 0;

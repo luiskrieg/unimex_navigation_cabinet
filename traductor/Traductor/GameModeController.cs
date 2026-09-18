@@ -77,12 +77,29 @@ public sealed class GameModeController
     public void EnterGameMode(RectDto? rect)
     {
         _cursor.Apply();
-        if (rect is not null)
+
+        int x, y;
+        var usable = rect is not null && rect.Width > 0 && rect.Height > 0;
+        if (usable)
         {
-            var x = (int)((rect.X + rect.Width / 2) * _dpiScale);
-            var y = (int)((rect.Y + rect.Height / 2) * _dpiScale);
-            NativeMethods.SetCursorPos(x, y);
+            x = (int)((rect!.X + rect.Width / 2) * _dpiScale);
+            y = (int)((rect.Y + rect.Height / 2) * _dpiScale);
         }
+        else
+        {
+            // Sin un rect utilizable el cursor se quedaba exactamente donde lo
+            // hubiera dejado la sesión anterior —abajo, casi siempre— y el
+            // jugador empezaba sin saber dónde está el puntero, que es justo
+            // lo que CA414.3 quiere evitar. El centro de la pantalla es la
+            // mejor aproximación al centro del juego: en kiosko a pantalla
+            // completa son el mismo punto.
+            x = NativeMethods.GetSystemMetrics(NativeMethods.SM_CXSCREEN) / 2;
+            y = NativeMethods.GetSystemMetrics(NativeMethods.SM_CYSCREEN) / 2;
+        }
+
+        NativeMethods.SetCursorPos(x, y);
+        Log.Write($"Cursor colocado en {x},{y}"
+            + (usable ? "." : " (el Guest no mandó un rect utilizable: centro de la pantalla)."));
     }
 
     /// Se llama desde <see cref="ModoJuegoState.TurnedOff"/>, que es la

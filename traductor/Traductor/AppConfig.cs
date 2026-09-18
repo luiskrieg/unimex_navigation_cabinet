@@ -137,9 +137,13 @@ public sealed class AppConfig
     }
 }
 
+/// Paso del cursor en píxeles: arranca en <see cref="StepBase"/> y crece
+/// <see cref="StepGrowth"/> por repetición mientras se mantenga la tecla,
+/// hasta <see cref="AccelMax"/> repeticiones. El paso máximo es
+/// StepBase + StepGrowth * AccelMax.
 public sealed class CursorConfig
 {
-    public int StepBase { get; init; } = 16;
-    public int StepGrowth { get; init; } = 7;
-    public int AccelMax { get; init; } = 9;
+    public int StepBase { get; init; } = 10;
+    public int StepGrowth { get; init; } = 3;
+    public int AccelMax { get; init; } = 8;
 }

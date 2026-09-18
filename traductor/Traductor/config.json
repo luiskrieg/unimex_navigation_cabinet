@@ -19,10 +19,11 @@
     "back": ["Back", "BrowserBack"]
   },
 
+  "_cursor": "Velocidad del cursor, en pixeles por pulsacion. El paso arranca en stepBase y crece stepGrowth por cada repeticion mientras se mantenga la tecla, hasta accelMax repeticiones: el paso maximo es stepBase + stepGrowth * accelMax. Subir stepBase lo hace mas brusco desde el primer toque; subir stepGrowth lo hace acelerar antes.",
   "cursor": {
-    "stepBase": 16,
-    "stepGrowth": 7,
-    "accelMax": 9
+    "stepBase": 10,
+    "stepGrowth": 3,
+    "accelMax": 8
   },
 
   "watchdogTimeoutMs": 2000,
