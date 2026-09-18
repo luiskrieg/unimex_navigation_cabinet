@@ -15,6 +15,19 @@
     <RootNamespace>Traductor</RootNamespace>
     <AssemblyName>Traductor</AssemblyName>
 
+    <!-- Icono del ejecutable. Se usa la versión "-app" y no el .ico original
+         de diseño porque aquel trae una sola imagen de 256x242: Windows la
+         reduciría a 16x16 para el Administrador de tareas y, al no ser
+         cuadrada, se vería estirada. La "-app" es el mismo arte centrado en
+         lienzo cuadrado y exportado a 16/24/32/48/64/128/256. Si cambia el
+         isotipo, se regenera desde el original (ver GUIA-DE-USO.md §7). -->
+    <ApplicationIcon>..\..\assets\AIC-Isotipo-app.ico</ApplicationIcon>
+
+    <!-- Lo que muestra el Administrador de tareas en la columna de nombre no
+         es el nombre del archivo sino esta descripción. -->
+    <AssemblyTitle>Traductor del gabinete</AssemblyTitle>
+    <Product>Traductor del gabinete</Product>
+
     <!-- Autocontenido (sin instalar el runtime de .NET en cada gabinete):
          dotnet publish -c Release -r win-x64 -->
     <SelfContained>true</SelfContained>

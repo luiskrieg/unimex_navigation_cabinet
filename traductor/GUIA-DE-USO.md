@@ -174,3 +174,34 @@ Con `guestUrl` configurado, el traductor abre Chrome él mismo, así que esa ún
 tarea deja el gabinete completo arriba. Si en cambio se prefiere que Chrome lo
 lance su propia tarea (el reparto que describe la guía de kiosko), hay que dejar
 `guestUrl` vacío para que no se abran dos navegadores.
+
+## 7. El icono del ejecutable
+
+El `.exe` lleva el isotipo de AIC. Sale de `assets/AIC-Isotipo-app.ico`, que **no**
+es el archivo de diseño sino una versión derivada — el original
+(`assets/AIC-Isotipo.ico`) trae una sola imagen de 256×242, y así Windows lo
+reduciría él mismo a 16×16 para el Administrador de tareas (borroso) y lo
+estiraría por no ser cuadrado.
+
+Si cambia el isotipo, se reemplaza el original y se regenera:
+
+```powershell
+cd traductor
+.\generar-icono.ps1     # centra en lienzo cuadrado y exporta 16/24/32/48/64/128/256
+dotnet publish Traductor\Traductor.csproj -c Release -r win-x64 -o <carpeta>
+```
+
+Dónde se ve, y dónde no: el traductor no tiene ventana ni icono junto al reloj
+(#414 CA1 lo prohíbe expresamente), así que el icono aparece **solo** en el
+archivo dentro del Explorador y en Administrador de tareas → Detalles. No sirve
+para que el jugador sepa que el programa está corriendo; sirve para que quien
+instala o da soporte encuentre rápido el archivo correcto entre los 244 de la
+carpeta.
+
+En esa misma columna del Administrador de tareas se lee "Traductor del gabinete",
+que viene de `<AssemblyTitle>` en el `.csproj` — el nombre del archivo sigue
+siendo `Traductor.exe`.
+
+> Cambiar el icono cambia el binario, así que conviene volver a correr el `.exe`
+> una vez en una máquina con Smart App Control antes de repartirlo. Con este
+> cambio se verificó: corre 3 de 3.
