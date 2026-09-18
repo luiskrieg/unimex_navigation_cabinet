@@ -61,7 +61,7 @@ public sealed class AppConfig
         public RawKeyMap KeyMap { get; set; } = new();
     }
 
-    private sealed class RawKeyMap
+    internal sealed class RawKeyMap
     {
         public string[] Up { get; set; } = { "Up" };
         public string[] Down { get; set; } = { "Down" };

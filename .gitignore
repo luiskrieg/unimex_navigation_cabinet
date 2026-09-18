@@ -1,0 +1,19 @@
+# Compilados de .NET. Aquí vive el .exe autocontenido de ~154 MB que GitHub
+# rechaza (límite de 100 MB por archivo): el ejecutable se reconstruye con
+# `dotnet publish` y se distribuye como .zip, no por el repo.
+bin/
+obj/
+
+# El traductor escribe su log junto al .exe.
+*.log
+
+# Configuración de Claude Code propia de esta máquina (rutas absolutas del
+# usuario). El resto de .claude/ —lo que sí se comparte con el equipo— se
+# versiona normalmente.
+.claude/settings.local.json
+
+# Archivos de usuario de Visual Studio / Rider.
+.vs/
+.idea/
+*.user
+*.suo

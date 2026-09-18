@@ -11,7 +11,7 @@ namespace Traductor;
 public sealed class ModoJuegoState : IDisposable
 {
     private readonly int _timeoutMs;
-    private readonly Timer _watchdog;
+    private readonly System.Threading.Timer _watchdog;
     private readonly object _lock = new();
     private DateTime _lastPing = DateTime.MinValue;
     private bool _on;
@@ -26,7 +26,7 @@ public sealed class ModoJuegoState : IDisposable
     public ModoJuegoState(int timeoutMs)
     {
         _timeoutMs = timeoutMs;
-        _watchdog = new Timer(_ => CheckTimeout(), null, 250, 250);
+        _watchdog = new System.Threading.Timer(_ => CheckTimeout(), null, 250, 250);
     }
 
     public bool IsOn { get { lock (_lock) return _on; } }
