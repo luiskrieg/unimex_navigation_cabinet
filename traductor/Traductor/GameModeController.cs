@@ -78,28 +78,48 @@ public sealed class GameModeController
     {
         _cursor.Apply();
 
-        int x, y;
-        var usable = rect is not null && rect.Width > 0 && rect.Height > 0;
-        if (usable)
+        var screenWidth = NativeMethods.GetSystemMetrics(NativeMethods.SM_CXSCREEN);
+        var screenHeight = NativeMethods.GetSystemMetrics(NativeMethods.SM_CYSCREEN);
+
+        int x = 0, y = 0;
+        string? porQueAlCentro = null;
+
+        if (rect is null || rect.Width <= 0 || rect.Height <= 0)
         {
-            x = (int)((rect!.X + rect.Width / 2) * _dpiScale);
-            y = (int)((rect.Y + rect.Height / 2) * _dpiScale);
+            porQueAlCentro = "el Guest no mandó un rect utilizable";
         }
         else
         {
-            // Sin un rect utilizable el cursor se quedaba exactamente donde lo
-            // hubiera dejado la sesión anterior —abajo, casi siempre— y el
-            // jugador empezaba sin saber dónde está el puntero, que es justo
-            // lo que CA414.3 quiere evitar. El centro de la pantalla es la
-            // mejor aproximación al centro del juego: en kiosko a pantalla
-            // completa son el mismo punto.
-            x = NativeMethods.GetSystemMetrics(NativeMethods.SM_CXSCREEN) / 2;
-            y = NativeMethods.GetSystemMetrics(NativeMethods.SM_CYSCREEN) / 2;
+            x = (int)((rect.X + rect.Width / 2) * _dpiScale);
+            y = (int)((rect.Y + rect.Height / 2) * _dpiScale);
+
+            // El rect puede llegar en coordenadas del documento y no del
+            // viewport: con la página desplazada, un juego que ocupa toda la
+            // pantalla se reporta en y=1080 y su centro cae en 1620, fuera de
+            // una pantalla de 1080 de alto. Windows entonces pega el cursor al
+            // borde, y el jugador lo encuentra "hasta abajo" en vez de al
+            // centro. Un centro fuera de la pantalla es siempre un rect en el
+            // que no se puede confiar, venga de donde venga.
+            if (x < 0 || x >= screenWidth || y < 0 || y >= screenHeight)
+            {
+                porQueAlCentro =
+                    $"el centro del rect ({x},{y}) cae fuera de la pantalla de {screenWidth}x{screenHeight}";
+            }
+        }
+
+        if (porQueAlCentro is not null)
+        {
+            // El centro de la pantalla es la mejor aproximación al centro del
+            // juego: en kiosko a pantalla completa son el mismo punto. Sin
+            // esto el cursor se quedaba donde lo dejó la sesión anterior y el
+            // jugador empezaba sin saber dónde está el puntero (CA414.3).
+            x = screenWidth / 2;
+            y = screenHeight / 2;
         }
 
         NativeMethods.SetCursorPos(x, y);
         Log.Write($"Cursor colocado en {x},{y}"
-            + (usable ? "." : " (el Guest no mandó un rect utilizable: centro de la pantalla)."));
+            + (porQueAlCentro is null ? "." : $" (centro de la pantalla porque {porQueAlCentro})."));
     }
 
     /// Se llama desde <see cref="ModoJuegoState.TurnedOff"/>, que es la
