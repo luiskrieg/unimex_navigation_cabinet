@@ -31,9 +31,15 @@ public sealed class WebSocketBridge
     private HttpListener? _listener;
     private CancellationTokenSource? _cts;
 
-    /// Se dispara con el rect (en px CSS de viewport) que el Guest reporta
-    /// al montar la pantalla de juego. Puede ser null si el mensaje no lo trae.
-    public event Action<RectDto?>? ModoJuegoOnRequested;
+    /// Se dispara con el rect (en px CSS de pantalla) que el Guest reporta al
+    /// montar la pantalla de juego, y con el modo de navegación que pide para
+    /// esa sesión (`"cursor"` o `"mapeado"`). Ambos pueden ser null si el
+    /// mensaje no los trae — un Guest anterior a esta versión no manda modo, y
+    /// entonces vale el de siempre, cursor libre.
+    public event Action<RectDto?, string?>? ModoJuegoOnRequested;
+
+    /// El Guest pide que el cursor real salte a un punto (px CSS de pantalla).
+    public event Action<double, double>? CursorRequested;
 
     public WebSocketBridge(int port, ModoJuegoState state)
     {
@@ -148,11 +154,17 @@ public sealed class WebSocketBridge
                 if (msg.On == true)
                 {
                     _state.SetOn();
-                    ModoJuegoOnRequested?.Invoke(msg.Rect);
+                    ModoJuegoOnRequested?.Invoke(msg.Rect, msg.Navegacion);
                 }
                 else
                 {
                     _state.SetOff();
+                }
+                break;
+            case "cursor_a":
+                if (msg.X is double x && msg.Y is double y)
+                {
+                    CursorRequested?.Invoke(x, y);
                 }
                 break;
             case "ping":
@@ -161,10 +173,18 @@ public sealed class WebSocketBridge
         }
     }
 
-    private sealed class InboundMessage
+    // `internal` y no `private` para que `JsonContext` pueda nombrarla.
+    internal sealed class InboundMessage
     {
         public string? Type { get; set; }
         public bool? On { get; set; }
         public RectDto? Rect { get; set; }
+
+        /// Solo en `modo_juego`: `"cursor"` (por defecto) o `"mapeado"`.
+        public string? Navegacion { get; set; }
+
+        /// Solo en `cursor_a`: destino del salto, en px CSS de pantalla.
+        public double? X { get; set; }
+        public double? Y { get; set; }
     }
 }

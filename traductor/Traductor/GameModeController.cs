@@ -16,6 +16,23 @@ public sealed class GameModeController
     private readonly double _dpiScale;
     private readonly HashSet<Keys> _confirmHeld = new();
 
+    /// <summary>
+    /// Modo de navegación de la sesión de juego en curso, que decide el Guest
+    /// según el proveedor del juego abierto:
+    ///
+    /// - <b>false (cursor libre)</b>: lo de siempre — las flechas se tragan y
+    ///   mueven el cursor real paso a paso.
+    /// - <b>true (posiciones mapeadas)</b>: las flechas <b>no</b> se tragan y
+    ///   llegan a Chrome, donde el Guest mueve su resaltado entre las
+    ///   posiciones que tiene mapeadas y nos manda `cursor_a` con el destino.
+    ///   Enter y espacio se siguen tragando: el clic real es lo único que
+    ///   puede pulsar un juego en un iframe de otro dominio.
+    ///
+    /// `volatile` porque se escribe desde el hilo del WebSocket y se lee desde
+    /// el hilo del hook de teclado.
+    /// </summary>
+    private volatile bool _modoMapeado;
+
     public GameModeController(
         AppConfig.KeyMapConfig keyMap,
         MouseSimulator mouse,
@@ -36,19 +53,31 @@ public sealed class GameModeController
     public bool ShouldSwallow(Keys key)
     {
         if (!_state.IsOn) return false;
-        return _keyMap.Up.Contains(key) || _keyMap.Down.Contains(key)
-            || _keyMap.Left.Contains(key) || _keyMap.Right.Contains(key)
-            || _keyMap.Confirm.Contains(key);
+        // En modo mapeado las flechas son del Guest: si se tragaran aquí, su
+        // resaltado no se movería nunca.
+        if (!_modoMapeado && EsFlecha(key)) return true;
+        return _keyMap.Confirm.Contains(key);
     }
 
     public void OnKeyDown(Keys key, bool isRepeat)
     {
         if (!_state.IsOn) return;
 
-        if (_keyMap.Up.Contains(key)) { _mouse.Move(Direction.Up, isRepeat); return; }
-        if (_keyMap.Down.Contains(key)) { _mouse.Move(Direction.Down, isRepeat); return; }
-        if (_keyMap.Left.Contains(key)) { _mouse.Move(Direction.Left, isRepeat); return; }
-        if (_keyMap.Right.Contains(key)) { _mouse.Move(Direction.Right, isRepeat); return; }
+        // Este método corre SIEMPRE, se haya tragado la tecla o no (el hook
+        // dispara sus eventos antes de mirar `ShouldSwallow`). Sin esta guarda,
+        // en modo mapeado la flecha llegaría al Guest **y además** movería el
+        // cursor por su cuenta: los dos a la vez.
+        if (!_modoMapeado)
+        {
+            if (_keyMap.Up.Contains(key)) { _mouse.Move(Direction.Up, isRepeat); return; }
+            if (_keyMap.Down.Contains(key)) { _mouse.Move(Direction.Down, isRepeat); return; }
+            if (_keyMap.Left.Contains(key)) { _mouse.Move(Direction.Left, isRepeat); return; }
+            if (_keyMap.Right.Contains(key)) { _mouse.Move(Direction.Right, isRepeat); return; }
+        }
+        else if (EsFlecha(key))
+        {
+            return;
+        }
 
         if (_keyMap.Confirm.Contains(key))
         {
@@ -70,12 +99,19 @@ public sealed class GameModeController
         }
     }
 
+    private bool EsFlecha(Keys key) =>
+        _keyMap.Up.Contains(key) || _keyMap.Down.Contains(key)
+        || _keyMap.Left.Contains(key) || _keyMap.Right.Contains(key);
+
     /// El Guest avisó "modo_juego: on" (#414 CA3). El estado ya lo puso en
     /// `on` quien recibió el mensaje (<see cref="WebSocketBridge"/>); aquí
-    /// solo se ejecutan los efectos: vestir el cursor y centrarlo en el área
-    /// de juego que reportó el Guest.
-    public void EnterGameMode(RectDto? rect)
+    /// solo se ejecutan los efectos: fijar el modo de navegación que pide el
+    /// Guest, vestir el cursor y centrarlo en el área de juego que reportó.
+    public void EnterGameMode(RectDto? rect, string? navegacion)
     {
+        _modoMapeado = string.Equals(navegacion, "mapeado", StringComparison.OrdinalIgnoreCase);
+        Log.Write($"Navegación: {(_modoMapeado ? "posiciones mapeadas (las flechas son del Guest)" : "cursor libre")}.");
+
         _cursor.Apply();
 
         var screenWidth = NativeMethods.GetSystemMetrics(NativeMethods.SM_CXSCREEN);
@@ -122,12 +158,49 @@ public sealed class GameModeController
             + (porQueAlCentro is null ? "." : $" (centro de la pantalla porque {porQueAlCentro})."));
     }
 
+    /// <summary>
+    /// El Guest movió su resaltado a una posición mapeada y pide que el cursor
+    /// real salte ahí, para que el siguiente Enter pulse ese control del juego.
+    ///
+    /// Las coordenadas llegan en píxeles CSS **de pantalla** —el Guest ya le
+    /// sumó la posición de la ventana y el alto de la barra del navegador—, así
+    /// que aquí solo queda aplicar el escalado de Windows, igual que con el
+    /// rect de entrada.
+    /// </summary>
+    public void MoveCursorTo(double x, double y)
+    {
+        if (!_state.IsOn) return;
+
+        var px = (int)(x * _dpiScale);
+        var py = (int)(y * _dpiScale);
+
+        var screenWidth = NativeMethods.GetSystemMetrics(NativeMethods.SM_CXSCREEN);
+        var screenHeight = NativeMethods.GetSystemMetrics(NativeMethods.SM_CYSCREEN);
+
+        // A diferencia de la entrada en modo juego, un punto fuera de pantalla
+        // NO cae al centro: ahí el centro es una aproximación razonable del
+        // área de juego, pero para un salto dejaría el cursor en mitad del
+        // juego y el siguiente Enter pulsaría cualquier cosa. Mejor no moverse.
+        if (px < 0 || px >= screenWidth || py < 0 || py >= screenHeight)
+        {
+            Log.Write(
+                $"Salto de cursor ignorado: ({px},{py}) cae fuera de la pantalla de {screenWidth}x{screenHeight}.");
+            return;
+        }
+
+        NativeMethods.SetCursorPos(px, py);
+        Log.Write($"Cursor saltó a {px},{py}.");
+    }
+
     /// Se llama desde <see cref="ModoJuegoState.TurnedOff"/>, que es la
     /// única fuente de verdad para "salir de modo juego" — dispara igual si
     /// vino de un aviso explícito del Guest o del vigilante de latido
     /// (#414 CA7, CA9).
     public void ExitGameMode()
     {
+        // Sin esto, la siguiente sesión de juego arrancaría en modo mapeado
+        // aunque el Guest no lo haya pedido, y las flechas no moverían nada.
+        _modoMapeado = false;
         // Nunca dejar un botón de mouse "atorado" abajo a medio clic
         // mantenido si el modo juego termina de golpe.
         if (_confirmHeld.Count > 0)

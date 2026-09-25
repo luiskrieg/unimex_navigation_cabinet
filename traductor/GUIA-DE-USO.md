@@ -162,6 +162,39 @@ Guest conectado por WebSocket.
 | Nunca aparece `Guest conectado` | El Guest no logró conectarse: Chrome lo bloqueó (Private Network Access) o el traductor arrancó después de la página. |
 | `No se encontró Chrome` | Se abrió el navegador por defecto y sin kiosko. Instalar Chrome en esa máquina. |
 | El archivo no existe | O `logEnabled` está en `false`, o la carpeta no tiene permiso de escritura (típico en `Archivos de programa`). |
+| `Salto de cursor ignorado: (x,y) cae fuera de la pantalla` | El Guest pidió llevar el cursor a un punto imposible. Suele ser `dpiScale` mal puesto para el escalado de Windows de esa pantalla. |
+
+### El canal con el Guest
+
+El traductor no sabe nada de juegos, proveedores ni pantallas: **todo eso vive en
+el Guest**, que se despliega aparte y llega al gabinete con solo recargar. Lo
+único que cruza entre los dos es este puñado de mensajes, que el Guest manda por
+`ws://127.0.0.1:<webSocketPort>`.
+
+| Mensaje | Cuándo lo manda el Guest | Qué hace el traductor |
+|---|---|---|
+| `{"type":"modo_juego","on":true,"navegacion":"cursor","rect":{…}}` | Al montar la pantalla de juego, incluida la ventana de carga | Entra en modo juego, viste el cursor y lo centra en el área que describe `rect` |
+| `{"type":"modo_juego","on":true,"navegacion":"mapeado","rect":{…}}` | Cuando el juego abierto es de un proveedor con posiciones mapeadas | Igual, pero **deja de tragarse las flechas**: pasan a Chrome para que el Guest mueva su resaltado |
+| `{"type":"cursor_a","x":…,"y":…}` | Cada vez que el resaltado cambia de elemento, en modo mapeado | Lleva el cursor real a ese punto |
+| `{"type":"modo_juego","on":false}` | Al salir del juego | Sale de modo juego y devuelve el cursor a su apariencia normal |
+| `{"type":"ping"}` cada 500 ms | Mientras hay juego abierto | Reinicia el vigilante: si deja de llegar, el traductor sale solo de modo juego en menos de 2 s |
+
+Las coordenadas (`rect`, `x`, `y`) llegan en **píxeles CSS de pantalla** —el Guest
+ya sumó dónde está la ventana y cuánto mide la barra del navegador—, y aquí solo
+se les aplica `dpiScale`.
+
+**Enter y espacio se tragan siempre** en modo juego, en los dos modos de
+navegación: el clic real es lo único que puede pulsar un juego servido en un
+iframe de otro dominio. **Esc y retroceso no se tragan nunca**, para que la salida
+del Guest siga funcionando.
+
+Un Guest anterior a esta versión no manda `navegacion`, y entonces vale el modo de
+siempre: cursor libre.
+
+**Dónde se ajustan las posiciones mapeadas:** no aquí. Viven en el Guest, en
+`pages/home/open-game/game-hotspots/hotspot-maps.ts`, medidas en píxeles de una
+resolución de referencia. Cambiarlas es desplegar el Guest y recargar el kiosko —
+el ejecutable no se toca ni se vuelve a repartir.
 
 ## 6. Arranque automático con Windows
 

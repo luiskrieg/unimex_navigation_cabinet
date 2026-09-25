@@ -76,7 +76,8 @@ public sealed class AppConfig
     }
 
     // Forma cruda del JSON (keyMap llega como listas de nombres de tecla).
-    private sealed class RawConfig
+    // `internal` y no `private` para que `JsonContext` pueda nombrarla.
+    internal sealed class RawConfig
     {
         public int WebSocketPort { get; set; } = 8765;
         public int WatchdogTimeoutMs { get; set; } = 2000;

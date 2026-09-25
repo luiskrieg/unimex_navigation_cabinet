@@ -40,11 +40,15 @@ internal static class Program
         }
 
         var bridge = new WebSocketBridge(config.WebSocketPort, state);
-        bridge.ModoJuegoOnRequested += rect =>
+        bridge.ModoJuegoOnRequested += (rect, navegacion) =>
         {
             Log.Write($"modo_juego: ON (rect={(rect is null ? "null" : $"{rect.X},{rect.Y},{rect.Width}x{rect.Height}")})");
-            controller.EnterGameMode(rect);
+            controller.EnterGameMode(rect, navegacion);
         };
+
+        // Salto del cursor a una posición mapeada, en modo mapeado. El propio
+        // controlador ignora el salto si no hay juego abierto.
+        bridge.CursorRequested += controller.MoveCursorTo;
 
         // Única fuente de verdad para "salir de modo juego" (ver
         // GameModeController.ExitGameMode): cubre tanto el aviso explícito
