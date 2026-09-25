@@ -341,7 +341,27 @@ corrige el modo cuando se sabe quién sirve el juego.
 | `borden-girar` | Girar (entrada por defecto) | 1690 | 600 | 229 | 210 |
 
 **El chip de salida no está en el mapa** y no hace falta que esté: ya es una parada del recorrido por
-sí mismo, así que las flechas lo alcanzan como a cualquier otro control.
+sí mismo, así que las flechas lo alcanzan como a cualquier otro control. Como consecuencia, las
+correcciones del mapa (abajo) **nunca lo mueven**.
+
+### 7.0 La corrección vertical (`offsetY: 61`)
+
+Calibrado contra el gabinete: las seis cajas caían el mismo tanto **por encima** de los botones, con
+el tamaño y el eje X ya correctos. Eso corrige con un solo número, `offsetY`, en píxeles de
+referencia.
+
+**Cómo se lee el síntoma**, que es lo que evita tocar seis cajas cuando el problema es uno solo:
+
+| Lo que se ve | Qué significa | Dónde se corrige |
+|---|---|---|
+| Los seis desplazados **lo mismo**, tamaño y X correctos | El juego no empieza a dibujar donde lo calcula el encaje por proporción (un margen propio del proveedor, por ejemplo) | `offsetY` |
+| Los de abajo desviados **más** que los de arriba | La proporción de referencia no es la del juego | `referenceWidth` / `referenceHeight` |
+| Tamaños mal, no solo posición | Igual que el anterior: es escala, no traslación | `referenceWidth` / `referenceHeight` |
+
+`offsetY` se suma a la coordenada de referencia **antes** de escalar, no a los píxeles ya colocados.
+Por eso vale igual en cualquier resolución y no hay que recalibrar cuando cambia el tamaño de
+pantalla. Si alguna vez se mide el desfase directamente sobre la pantalla y el juego **no** está a
+escala 1:1, hay que dividir lo medido entre el factor de escala antes de escribirlo aquí.
 
 ### 7.1 Por qué píxeles de referencia y no fracciones
 
